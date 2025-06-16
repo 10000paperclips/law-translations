@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react'
+import { renderWithReferences, useReferenceTooltip } from './ReferenceTooltipHelper'
 
 function App() {
   const [laws, setLaws] = useState([])
   const [selectedLaw, setSelectedLaw] = useState(null)
   const [lawContent, setLawContent] = useState(null)
+  const { activeRef, toggleRef } = useReferenceTooltip()
 
   useEffect(() => {
     fetch('/law-translations/data/laws-index.json')
@@ -36,6 +38,8 @@ function App() {
         lineHeight: 1.6,
         textAlign: 'justify',
         margin: '0 auto',
+        backgroundColor: '#ffffff',
+        color: '#000000'
       }}
     >
       <h1 style={{ fontSize: '2rem', marginBottom: '1rem', fontWeight: 'bold' }}>
@@ -109,7 +113,7 @@ function App() {
                     {section.subsections?.[0] && (
                       <>
                         {section.subsections[0].no ? `${section.subsections[0].no} ` : ''}
-                        {section.subsections[0].text}
+                        {renderWithReferences(section.subsections[0].text, lawContent.sections, activeRef, toggleRef)}
                       </>
                     )}
                   </p>
@@ -118,11 +122,11 @@ function App() {
                     <div key={paraIdx}>
                       <p style={{ paddingLeft: '1.5rem', textIndent: '-0.5rem', margin: 0 }}>
                         <span style={{ fontWeight: 'normal' }}>{para.no}</span>{' '}
-                        {para.text}
+                        {renderWithReferences(para.text, lawContent.sections, activeRef, toggleRef)}
                       </p>
                       {para.subparagraphs?.map((subp, subpIdx) => (
                         <p key={subpIdx} style={{ paddingLeft: '3rem', textIndent: '-1rem', margin: 0 }}>
-                          <span>{subp.no}</span> {subp.text}
+                          <span>{subp.no}</span> {renderWithReferences(subp.text, lawContent.sections, activeRef, toggleRef)}
                         </p>
                       ))}
                     </div>
@@ -132,14 +136,14 @@ function App() {
                     <div key={subIdx}>
                       <p style={{ paddingLeft: '1rem', margin: 0 }}>
                         <span style={{ fontWeight: 'normal' }}>{sub.no}</span>{' '}
-                        {sub.text}
+                        {renderWithReferences(sub.text, lawContent.sections, activeRef, toggleRef)}
                       </p>
 
                       {sub.paragraphs?.map((para, paraIdx) => (
                         <div key={paraIdx}>
                           <p style={{ paddingLeft: '1rem', margin: 0 }}>
                             <span style={{ fontWeight: 'normal' }}>{para.no}</span>{' '}
-                            {para.text}
+                            {renderWithReferences(para.text, lawContent.sections, activeRef, toggleRef)}
                           </p>
                           {para.subparagraphs?.map((subp, subpIdx) => (
                             <p
@@ -151,7 +155,7 @@ function App() {
                                 margin: 0,
                               }}
                             >
-                              <span>{subp.no}</span> {subp.text}
+                              <span>{subp.no}</span> {renderWithReferences(subp.text, lawContent.sections, activeRef, toggleRef)}
                             </p>
                           ))}
                         </div>

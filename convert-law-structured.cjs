@@ -5,7 +5,7 @@ const fs = require('fs')
 const path = require('path')
 
 const inputPath = path.join(__dirname, 'raw/japan-civil-procedure.txt')
-const outputPath = path.join(__dirname, 'src/data/japan-civil-procedure.json')
+const outputPath = path.join(__dirname, 'public/data/japan-civil-procedure.json')
 
 const raw = fs.readFileSync(inputPath, 'utf-8')
 const lines = raw.split(/\r?\n/)
