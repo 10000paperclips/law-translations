@@ -5,7 +5,6 @@ function App() {
   const [selectedLaw, setSelectedLaw] = useState(null)
   const [lawContent, setLawContent] = useState(null)
 
-  // Load the laws index (list of laws)
   useEffect(() => {
     fetch('/law-translations/src/data/laws-index.json')
       .then((res) => res.json())
@@ -13,7 +12,6 @@ function App() {
       .catch((err) => console.error('Failed to load law index:', err))
   }, [])
 
-  // Load a specific law file
   const loadLaw = async (filename) => {
     try {
       const res = await fetch(`/law-translations/src/data/${filename}`)
@@ -33,7 +31,6 @@ function App() {
     <div style={{ padding: '2rem', fontFamily: 'sans-serif' }}>
       <h1>국가별 번역 법률</h1>
 
-      {/* Law list */}
       <h2>법률 목록</h2>
       <ul>
         {laws.map((law) => (
@@ -43,16 +40,32 @@ function App() {
         ))}
       </ul>
 
-      {/* Law content */}
       {lawContent && (
         <div style={{ marginTop: '2rem' }}>
           <h2>{lawContent.title_kr} ({lawContent.title_original})</h2>
           <p><strong>국가:</strong> {lawContent.country}</p>
-          {lawContent.articles.map((article, index) => (
-            <div key={index} style={{ marginTop: '1rem' }}>
-              <h4>{article.article_no}</h4>
-              <p><strong>번역:</strong> {article.text_kr}</p>
-              <p><strong>원문:</strong> {article.text_original}</p>
+
+          {lawContent.sections.map((section, idx) => (
+            <div key={idx} style={{ marginTop: '1.5rem' }}>
+              <h3>{section.section_no} {section.title && `(${section.title})`}</h3>
+
+              {section.subsections.map((sub, subIdx) => (
+                <div key={subIdx} style={{ marginLeft: '1rem', marginTop: '0.5rem' }}>
+                  <p><strong>{sub.no}</strong> {sub.text}</p>
+
+                  {sub.paragraphs && sub.paragraphs.map((para, paraIdx) => (
+                    <div key={paraIdx} style={{ marginLeft: '1rem', marginTop: '0.3rem' }}>
+                      <p><strong>{para.no}</strong> {para.text}</p>
+
+                      {para.subparagraphs && para.subparagraphs.map((subp, subpIdx) => (
+                        <p key={subpIdx} style={{ marginLeft: '1.5rem' }}>
+                          <strong>{subp.no}</strong> {subp.text}
+                        </p>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+              ))}
             </div>
           ))}
         </div>

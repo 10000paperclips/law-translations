@@ -5,5 +5,12 @@
     "title_original": "Code civil français",
     "country": "France",
     "file": "france-civil-code.json"
+  },
+  {
+    "id": "jpn-civ-proc-001",
+    "title_kr": "일본 민사소송법",
+    "title_original": "民事訴訟法",
+    "country": "Japan",
+    "file": "japan-civil-procedure.json"
   }
 ]
