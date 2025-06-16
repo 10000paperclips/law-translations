@@ -6,7 +6,7 @@ function App() {
   const [lawContent, setLawContent] = useState(null)
 
   useEffect(() => {
-    fetch('./law-translations/src/data/laws-index.json')
+    fetch('./src/data/laws-index.json')
       .then((res) => res.json())
       .then((data) => setLaws(data))
       .catch((err) => console.error('Failed to load law index:', err))
