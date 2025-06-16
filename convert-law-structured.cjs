@@ -1,11 +1,16 @@
+// convert-law-structured.cjs
+// Converts raw legal text to structured JSON format with headings (편, 장, 절, 관)
+
 const fs = require('fs')
 const path = require('path')
 
-// === CONFIGURATION ===
-const INPUT_FILE = path.join(__dirname, 'raw', 'japan-civil-procedure.txt')
-const OUTPUT_FILE = path.join(__dirname, 'src', 'data', 'japan-civil-procedure.json')
+const inputPath = path.join(__dirname, 'raw/japan-civil-procedure.txt')
+const outputPath = path.join(__dirname, 'src/data/japan-civil-procedure.json')
 
-const metadata = {
+const raw = fs.readFileSync(inputPath, 'utf-8')
+const lines = raw.split(/\r?\n/)
+
+const result = {
   id: 'jpn-civ-proc-001',
   country: 'Japan',
   language: 'ko',
@@ -14,96 +19,107 @@ const metadata = {
   sections: []
 }
 
-// === PATTERNS ===
-const sectionRegex = /^제\d+조(?:\(([^)]+)\))?\s+(.+)$/
-const subsectionRegex = /^[①②③④⑤⑥⑦⑧⑨⑩]/     // 항
-const paragraphRegex = /^\d+\./                   // 호
-const subparagraphRegex = /^[가-힣]\./             // 목
-
-const lines = fs.readFileSync(INPUT_FILE, 'utf-8').split('\n')
+const headingPatterns = {
+  title: /^제(\d+)편\s+(.+)$/,      // 편 = Title
+  chapter: /^제(\d+)장\s+(.+)$/,    // 장 = Chapter
+  part: /^제(\d+)절\s+(.+)$/,       // 절 = Part
+  subpart: /^제(\d+)관\s+(.+)$/     // 관 = Subpart
+}
 
 let currentSection = null
-let currentSubsection = null
-let currentParagraph = null
 
-for (let rawLine of lines) {
-  const line = rawLine.trim()
+for (let line of lines) {
+  line = line.trim()
   if (!line) continue
 
-  const sectionMatch = line.match(sectionRegex)
-  const isSubsection = subsectionRegex.test(line)
-  const isParagraph = paragraphRegex.test(line)
-  const isSubparagraph = subparagraphRegex.test(line)
+  // Check for high-level heading
+  let matchedHeading = false
+  for (const [level, pattern] of Object.entries(headingPatterns)) {
+    const match = line.match(pattern)
+    if (match) {
+      result.sections.push({
+        type: 'heading',
+        level,
+        number: match[1],
+        title: match[2]
+      })
+      matchedHeading = true
+      break
+    }
+  }
+  if (matchedHeading) continue
 
+  // Check for section (조) and extract trailing text
+  const sectionMatch = line.match(/^제(\d+)조(?:\(([^\)]+)\))?\s*(.*)/) // e.g. 제1조(제목) 본문
   if (sectionMatch) {
-    const section_no = line.match(/^제\d+조/)[0]
-    const title = sectionMatch[1] || ''
-    const text = sectionMatch[2]
-
     currentSection = {
-      section_no,
-      title,
+      section_no: `제${sectionMatch[1]}조`,
+      title: sectionMatch[2] || '',
       subsections: []
     }
 
-    // If the text is not part of a numbered subsection, treat it as 1 implicit one
-    if (!subsectionRegex.test(text)) {
+    const remainingText = sectionMatch[3].trim()
+    if (remainingText) {
       currentSection.subsections.push({
         no: '',
-        text,
+        text: remainingText,
         paragraphs: []
       })
     }
 
-    metadata.sections.push(currentSection)
-    currentSubsection = null
-    currentParagraph = null
+    result.sections.push(currentSection)
+    continue
   }
 
-  else if (isSubsection) {
-    const no = line[0]
-    const text = line.slice(1).trim()
-
-    currentSubsection = {
-      no,
-      text,
+  // Subsection (항), starts with circled digits or omitted if only one 항
+  const subsectionMatch = line.match(/^([\u2460-\u2473])\s*(.+)$/)
+  if (subsectionMatch) {
+    currentSection.subsections.push({
+      no: subsectionMatch[1],
+      text: subsectionMatch[2],
       paragraphs: []
-    }
-
-    currentSection?.subsections.push(currentSubsection)
-    currentParagraph = null
-  }
-
-  else if (isParagraph) {
-    const match = line.match(/^(\d+\.)\s*(.+)/)
-    if (!match) continue
-
-    const [ , no, text ] = match
-    currentParagraph = {
-      no,
-      text,
-      subparagraphs: []
-    }
-
-    currentSubsection?.paragraphs.push(currentParagraph)
-  }
-
-  else if (isSubparagraph) {
-    const match = line.match(/^([가-힣]\.)\s*(.+)/)
-    if (!match) continue
-
-    const [ , no, text ] = match
-    currentParagraph?.subparagraphs.push({ no, text })
-  }
-
-  else {
-    // fallback: plain paragraph if no structure matched
-    currentSubsection?.paragraphs?.push?.({
-      no: '',
-      text: line
     })
+    continue
+  }
+
+  // Paragraph (호): 1.
+  const paraMatch = line.match(/^(\d+)\.\s+(.+)$/)
+  if (paraMatch) {
+    const subsection = currentSection?.subsections?.slice().reverse().find(sub => sub)
+    if (subsection) {
+      subsection.paragraphs.push({
+        no: `${paraMatch[1]}.`,
+        text: paraMatch[2],
+        subparagraphs: []
+      })
+    } else {
+      console.warn(`⚠️ Paragraph found without subsection at line: ${line}`)
+    }
+    continue
+  }
+
+  // Subparagraph (목): 가.
+  const subpMatch = line.match(/^([가-힣])\.\s+(.+)$/)
+  if (subpMatch) {
+    const subsection = currentSection?.subsections?.slice().reverse().find(sub => sub)
+    const paragraph = subsection?.paragraphs?.slice().reverse().find(p => p)
+    if (paragraph) {
+      paragraph.subparagraphs.push({
+        no: `${subpMatch[1]}.`,
+        text: subpMatch[2]
+      })
+    } else {
+      console.warn(`⚠️ Subparagraph found without paragraph at line: ${line}`)
+    }
+    continue
+  }
+
+  // If nothing matches, treat as continuation of last subsection
+  if (currentSection?.subsections?.length) {
+    const lastSub = currentSection.subsections[currentSection.subsections.length - 1]
+    lastSub.text += ' ' + line
   }
 }
 
-fs.writeFileSync(OUTPUT_FILE, JSON.stringify(metadata, null, 2), 'utf-8')
-console.log(`✅ Structured law file created: ${OUTPUT_FILE}`)
+fs.writeFileSync(outputPath, JSON.stringify(result, null, 2), 'utf-8')
+console.log(`✅ Generated ${outputPath}`)
