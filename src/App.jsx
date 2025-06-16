@@ -6,7 +6,7 @@ function App() {
   const [lawContent, setLawContent] = useState(null)
 
   useEffect(() => {
-    fetch('/data/laws-index.json')
+    fetch('/law-translations/data/laws-index.json')
       .then((res) => res.json())
       .then((data) => setLaws(data))
       .catch((err) => console.error('Failed to load law index:', err))
@@ -14,7 +14,7 @@ function App() {
 
   const loadLaw = async (filename) => {
     try {
-      const res = await fetch(`/data/${filename}`)
+      const res = await fetch(`/law-translations/data/${filename}`)
       const data = await res.json()
       setLawContent(data)
     } catch (err) {
@@ -39,7 +39,7 @@ function App() {
       }}
     >
       <h1 style={{ fontSize: '2rem', marginBottom: '1rem', fontWeight: 'bold' }}>
-        국가별 번역 법률
+        세계법령정보
       </h1>
 
       <h2 style={{ fontSize: '1.2rem', marginBottom: '0.5rem', fontWeight: '600' }}>
@@ -59,7 +59,7 @@ function App() {
                 fontSize: '1rem',
               }}
             >
-              {law.title_kr} ({law.title_original})
+              {law.title_kr}({law.title_original})
             </button>
           </li>
         ))}
@@ -68,7 +68,7 @@ function App() {
       {lawContent && (
         <div style={{ marginTop: '1.5rem' }}>
           <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '1rem' }}>
-            {lawContent.title_kr} ({lawContent.title_original})
+            {lawContent.title_kr}({lawContent.title_original})
           </h2>
 
           {lawContent.sections.map((section, idx) => (
