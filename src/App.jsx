@@ -14,7 +14,7 @@ function App() {
 
   const loadLaw = async (filename) => {
     try {
-      const res = await fetch(`${process.env.PUBLIC_URL}/law-translations/src/data/${filename}`)
+      const res = await fetch(`${process.env.PUBLIC_URL}/src/data/${filename}`)
       const data = await res.json()
       setLawContent(data)
     } catch (err) {
