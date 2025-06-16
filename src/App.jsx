@@ -6,7 +6,7 @@ function App() {
   const [lawContent, setLawContent] = useState(null)
 
   useEffect(() => {
-    fetch('./law-translations/src/data/laws-index.json')
+    fetch('/data/laws-index.json')
       .then((res) => res.json())
       .then((data) => setLaws(data))
       .catch((err) => console.error('Failed to load law index:', err))
@@ -14,7 +14,7 @@ function App() {
 
   const loadLaw = async (filename) => {
     try {
-      const res = await fetch(`/law-translations/src/data/${filename}`)
+      const res = await fetch(`/data/${filename}`)
       const data = await res.json()
       setLawContent(data)
     } catch (err) {
